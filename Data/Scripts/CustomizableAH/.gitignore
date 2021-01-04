@@ -1,0 +1,12 @@
+# Ignore everything
+*
+
+# Except...
+!.gitignore
+!CustomizableAH.csproj
+!Logger.cs
+!TSSArtificialHorizon.cs
+!TSSBlock.cs
+!TSSCommon.cs
+!TSSGravity.cs
+!TSSVelocity.cs
