@@ -3,8 +3,8 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <AssemblyName>Gwindalmir.RealTimeTSS</AssemblyName>
-    <RootNamespace>Gwindalmir.RealTimeTSS</RootNamespace>
+    <AssemblyName>CustomizableAH</AssemblyName>
+    <RootNamespace>CustomizableAH</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

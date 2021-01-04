@@ -1,22 +1,27 @@
 ﻿/* Portions Copyright © 2020 Gwindalmir */
+/* Original script written by Keen Soft (SE Developers) */
+/* Reverse Engineered by Gwindalmir */
+/* Additional settings and information written by Callum Carmicheal */
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using Sandbox.Game.Localization;
 using Sandbox.ModAPI;
+
 using System;
 using System.Collections.Generic;
+using Gwindalmir.RealTimeTSS;
 using VRage;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
+
 using VRageMath;
+
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
-namespace Gwindalmir.RealTimeTSS
-{
+namespace CustomizableAH {
     [MyTextSurfaceScript("TSS_ArtificialHorizon", "DisplayName_TSS_ArtificialHorizon")]
-    public class TSSArtificialHorizon : TSSCommon
-    {
+    public class TSSArtificialHorizon : TSSCommon {
         private const int HUD_SCALING = 1200;
         private const double PLANET_GRAVITY_THRESHOLD_SQ = 0.0025;
         private const float LADDER_TEXT_SIZE_MULTIPLIER = 0.7f;
@@ -44,9 +49,10 @@ namespace Gwindalmir.RealTimeTSS
 
         private MyPlanet m_nearestPlanet;
 
+        private string m_DebugString = "";
+
         public TSSArtificialHorizon(IMyTextSurface surface, VRage.Game.ModAPI.Ingame.IMyCubeBlock block, Vector2 size)
-            : base(surface, block, size)
-        {
+                : base(surface, block, size) {
             if (m_block != null)
                 m_grid = m_block.CubeGrid as IMyCubeGrid;
 
@@ -71,19 +77,18 @@ namespace Gwindalmir.RealTimeTSS
             m_ladderStepSize = new Vector2(150, 31f) * m_maxScale;
             m_ladderStepTextOffset = new Vector2(0, m_ladderStepSize.Y * .5f);
 
-            m_updateRateDivisor = 1;    // 30 FPS
+            m_updateRateDivisor = 1; // 30 FPS
+
+            // Load block settings
+            m_DebugString = DateTime.Now.ToString();
         }
 
-        public override List<MySprite> RunSpecial()
-        {
+        public override List<MySprite> RunSpecial() {
             // Slow down updates if nothing changed (so display properly refreshes with accurate info on stop)
-            if (m_lastBlockMatrix == m_block.WorldMatrix)
-            {
+            if (m_lastBlockMatrix == m_block.WorldMatrix) {
                 if (m_updateRateDivisor != 30)
                     m_updateRateDivisor = 30;   // 1 FPS
-            }
-            else
-            {
+            } else {
                 if (m_updateRateDivisor != 1)
                     m_updateRateDivisor = 1;    // Back to 30 FPS
             }
@@ -91,9 +96,8 @@ namespace Gwindalmir.RealTimeTSS
             return base.RunSpecial();
         }
 
-        public override void Draw(MySpriteDrawFrame frame)
-        {
-            if (m_grid == null || m_grid.Physics == null)
+        public override void Draw(MySpriteDrawFrame frame) {
+            if (m_grid?.Physics == null)
                 return;
 
             Matrix blockLocalMat;
@@ -114,8 +118,7 @@ namespace Gwindalmir.RealTimeTSS
         }
 
         #region Planet Display
-        private void DrawPlanetDisplay(MySpriteDrawFrame frame, Vector3 gravity, MatrixD worldTrans)
-        {
+        private void DrawPlanetDisplay(MySpriteDrawFrame frame, Vector3 gravity, MatrixD worldTrans) {
             gravity.Normalize();
 
             var horizonForward = Vector3D.Reject(worldTrans.Forward, gravity);
@@ -124,7 +127,7 @@ namespace Gwindalmir.RealTimeTSS
             screenForward = Vector3D.TransformNormal(screenForward, MatrixD.Invert(worldTrans));
             var screenForward2D = new Vector2((float)screenForward.X, -(float)screenForward.Y) * HUD_SCALING * m_maxScale;
 
-            // Caluclate roll angle
+            // Calculate roll angle
             var forwardToGravRej = Vector3D.Normalize(Vector3D.Reject(gravity, worldTrans.Forward));
             double rollDot = Vector3.Dot(forwardToGravRej, worldTrans.Left);
             double rollAngle = -(Math.Acos(rollDot) - MathHelper.PiOver2);
@@ -141,8 +144,7 @@ namespace Gwindalmir.RealTimeTSS
             if (m_tickCounter % 1000 == 0)
                 m_nearestPlanet = MyGamePruningStructure.GetClosestPlanet(worldTrans.Translation);
 
-            if (m_nearestPlanet != null)
-            {
+            if (m_nearestPlanet != null) {
                 int radarAltitude = DrawAltitudeWarning(frame, worldTrans, m_nearestPlanet);
                 m_lastSeaLevelAlt = DrawAltimeter(frame, worldTrans, m_nearestPlanet, radarAltitude, m_textBoxSize);
                 m_lastRadarAlt = radarAltitude;
@@ -156,15 +158,26 @@ namespace Gwindalmir.RealTimeTSS
 
             DrawVelocityVector(frame, velocity, worldTrans);
             DrawBoreSight(frame);
+
+            DrawDebugString(frame);
         }
 
-        private void DrawHorizon(MySpriteDrawFrame frame, Vector2 screenForward2D, double rollAngle)
-        {
+        private void DrawDebugString(MySpriteDrawFrame frame) {
+            var loc = new Vector2(10, 10);
+            // m_DebugString = m_block.DisplayNameText;
+
+            AddTextBox(frame, loc + m_textBoxSize * 0.5f, m_textBoxSize, m_DebugString, m_fontId, m_fontScale,
+                m_foregroundColor, m_foregroundColor, "AH_TextBox", m_textOffsetInsideBox.X);
+        }
+
+        private void DrawHorizon(MySpriteDrawFrame frame, Vector2 screenForward2D, double rollAngle) {
             var size = new Vector2(m_screenDiag);
             var drawPosGround = new Vector2(0, m_screenDiag * .5f);
             drawPosGround.Rotate(rollAngle);
 
-            var bgSprite = new MySprite(SpriteType.TEXTURE, MyTextSurfaceHelper.DEFAULT_BG_TEXTURE, m_halfSize + drawPosGround + screenForward2D, size, new Color(m_foregroundColor, .5f), rotation: (float)rollAngle);
+            var bgSprite = new MySprite(SpriteType.TEXTURE, MyTextSurfaceHelper.DEFAULT_BG_TEXTURE, m_halfSize + drawPosGround + screenForward2D, size,
+                new Color(m_foregroundColor, .5f),
+                rotation: (float)rollAngle);
             frame.Add(bgSprite);
 
             bgSprite.Position = m_halfSize - drawPosGround + screenForward2D;
@@ -183,14 +196,12 @@ namespace Gwindalmir.RealTimeTSS
             frame.Add(horizonLine);
         }
 
-        private void DrawLadder(MySpriteDrawFrame frame, Vector3 gravity, MatrixD worldTrans, double pitchAngle, Vector3D horizonForward, double rollAngle)
-        {
+        private void DrawLadder(MySpriteDrawFrame frame, Vector3 gravity, MatrixD worldTrans, double pitchAngle, Vector3D horizonForward, double rollAngle) {
             double closestFullAngle = (pitchAngle / ANGLE_STEP); // 0.174533 is 10 deg
             int roundedClosestFullAngle = (int)Math.Round(closestFullAngle);
 
 
-            for (int i = roundedClosestFullAngle - 5; i <= roundedClosestFullAngle + 5; i++)
-            {
+            for (int i = roundedClosestFullAngle - 5; i <= roundedClosestFullAngle + 5; i++) {
                 if (i == 0)
                     continue;
 
@@ -228,8 +239,7 @@ namespace Gwindalmir.RealTimeTSS
             }
         }
 
-        private int DrawAltitudeWarning(MySpriteDrawFrame frame, MatrixD worldTrans, MyPlanet nearestPlanet)
-        {
+        private int DrawAltitudeWarning(MySpriteDrawFrame frame, MatrixD worldTrans, MyPlanet nearestPlanet) {
             var heightOfGrid = m_grid.PositionComp.LocalAABB.Height;
             var testWarningAlt = 100 + heightOfGrid;
 
@@ -237,8 +247,7 @@ namespace Gwindalmir.RealTimeTSS
             int radarAltitude = (int)Vector3D.Distance(closestPoint, worldTrans.Translation);
 
             // show when crossing down
-            if (m_lastRadarAlt >= testWarningAlt && radarAltitude < testWarningAlt)
-            {
+            if (m_lastRadarAlt >= testWarningAlt && radarAltitude < testWarningAlt) {
                 m_showAltWarning = true;
                 m_altWarningShownAt = m_tickCounter;
             }
@@ -246,8 +255,7 @@ namespace Gwindalmir.RealTimeTSS
             if (m_tickCounter - m_altWarningShownAt > ALTITUDE_WARNING_TIME_THRESHOLD)
                 m_showAltWarning = false;
 
-            if (m_showAltWarning)
-            {
+            if (m_showAltWarning) {
                 var text = MyTexts.Get(MySpaceTexts.DisplayName_TSS_ArtificialHorizon_AltitudeWarning);
                 var sizePxRadarAlt = m_surface.MeasureStringInPixels(text, m_fontId, m_fontScale);
                 var radarAltitudeWarning = MySprite.CreateText(text.ToString(), m_fontId, m_foregroundColor, m_fontScale, TextAlignment.LEFT);
@@ -258,8 +266,7 @@ namespace Gwindalmir.RealTimeTSS
             return radarAltitude;
         }
 
-        private double DrawAltimeter(MySpriteDrawFrame frame, MatrixD worldTrans, MyPlanet nearestPlanet, int radarAltitude, Vector2 textBoxSize)
-        {
+        private double DrawAltimeter(MySpriteDrawFrame frame, MatrixD worldTrans, MyPlanet nearestPlanet, int radarAltitude, Vector2 textBoxSize) {
             var seaLevelAltitude = Vector3D.Distance(nearestPlanet.PositionComp.GetPosition(), worldTrans.Translation);
             seaLevelAltitude -= nearestPlanet.AverageRadius; // substract radius to get sea level
 
@@ -269,8 +276,7 @@ namespace Gwindalmir.RealTimeTSS
             AddTextBox(frame, radarAltDrawPos + textBoxSize * 0.5f, textBoxSize, radarAltString, m_fontId, m_fontScale,
                 m_foregroundColor, m_foregroundColor, "AH_TextBox", m_textOffsetInsideBox.X);
 
-            if (radarAltitude < RADAR_ALTITUDE_THRESHOLD)
-            {
+            if (radarAltitude < RADAR_ALTITUDE_THRESHOLD) {
                 var radarSprite = MySprite.CreateText("R", m_fontId, m_foregroundColor, m_fontScale, TextAlignment.LEFT);
                 var pos = radarAltDrawPos + textBoxSize * 0.5f;
                 radarSprite.Position = pos + new Vector2(textBoxSize.X, -textBoxSize.Y) * 0.5f + m_textOffsetInsideBox;
@@ -283,25 +289,21 @@ namespace Gwindalmir.RealTimeTSS
             return seaLevelAltitude;
         }
 
-        private void DrawPullUpWarning(MySpriteDrawFrame frame, Vector3 velocity, MatrixD worldTrans, double rollAngle)
-        {
+        private void DrawPullUpWarning(MySpriteDrawFrame frame, Vector3 velocity, MatrixD worldTrans, double rollAngle) {
             var velocityTest = (m_grid.Physics.Mass / 16000f) * velocity;
             IHitInfo hitInfo;
             MyAPIGateway.Physics.CastRay(worldTrans.Translation, worldTrans.Translation + velocityTest, out hitInfo, 14);
-            if (hitInfo != null && m_tickCounter >= 0 && m_tickCounter % 100 > 10)
-            {
+            if (hitInfo != null && m_tickCounter >= 0 && m_tickCounter % 100 > 10) {
                 var pullUpSymbol = new MySprite(SpriteType.TEXTURE, "AH_PullUp", m_halfSize, new Vector2(150, 180), m_foregroundColor,
                     rotation: (float)rollAngle);
                 frame.Add(pullUpSymbol);
             }
         }
 
-        private void DrawVelocityVector(MySpriteDrawFrame frame, Vector3 velocity, MatrixD worldTrans)
-        {
+        private void DrawVelocityVector(MySpriteDrawFrame frame, Vector3 velocity, MatrixD worldTrans) {
             var dotVelForw = Vector3.Dot(velocity, worldTrans.Forward);
             // do not show if velocity vector points backwards
-            if (dotVelForw >= -0.1f)
-            {
+            if (dotVelForw >= -0.1f) {
                 var vSq = velocity.LengthSquared();
                 velocity.Normalize();
                 var projectionVel = Vector3D.Reject(velocity, worldTrans.Forward);
@@ -316,8 +318,7 @@ namespace Gwindalmir.RealTimeTSS
             }
         }
 
-        private void DrawBoreSight(MySpriteDrawFrame frame)
-        {
+        private void DrawBoreSight(MySpriteDrawFrame frame) {
             var boreSight = new MySprite(SpriteType.TEXTURE, "AH_BoreSight", m_size * 0.5f + new Vector2(0, 19) * m_maxScale, new Vector2(50, 50) * m_maxScale,
                 m_foregroundColor, rotation: (float)-Math.PI * 0.5f);
 
@@ -326,8 +327,7 @@ namespace Gwindalmir.RealTimeTSS
         #endregion
 
         #region Space Display
-        private void DrawSpaceDisplay(MySpriteDrawFrame frame, MatrixD worldTrans)
-        {
+        private void DrawSpaceDisplay(MySpriteDrawFrame frame, MatrixD worldTrans) {
             AddBackground(frame, new Color(m_backgroundColor, .66f));
 
             var velocity = m_grid.Physics.LinearVelocity;
@@ -349,8 +349,7 @@ namespace Gwindalmir.RealTimeTSS
         }
         #endregion
 
-        private MySpriteDrawFrame DrawSpeedIndicator(MySpriteDrawFrame frame, Vector2 drawPos, Vector2 textBoxSize, Vector3 velocity)
-        {
+        private MySpriteDrawFrame DrawSpeedIndicator(MySpriteDrawFrame frame, Vector2 drawPos, Vector2 textBoxSize, Vector3 velocity) {
             var velLen = (int)velocity.Length();
             AddTextBox(frame, drawPos + textBoxSize * 0.5f, textBoxSize, velLen.ToString(), m_fontId, m_fontScale,
                 m_foregroundColor, m_foregroundColor, "AH_TextBox", m_textOffsetInsideBox.X);

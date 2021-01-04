@@ -4,12 +4,13 @@ using Sandbox.ModAPI;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Gwindalmir.RealTimeTSS;
 using VRage;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
-namespace Gwindalmir.RealTimeTSS
+namespace CustomizableAH
 {
     [MyTextSurfaceScript("TSS_Gravity", "DisplayName_TSS_Gravity")]
     public class TSSGravity : TSSCommon

@@ -3,12 +3,13 @@ using Sandbox.Game.GameSystems.TextSurfaceScripts;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Gwindalmir.RealTimeTSS;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI;
 using VRageMath;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 
-namespace Gwindalmir.RealTimeTSS
+namespace CustomizableAH
 {
     [MyTextSurfaceScript("TSS_Velocity", "DisplayName_TSS_Velocity")]
     public class TSSVelocity : TSSCommon
