@@ -10,3 +10,5 @@
 !TSSCommon.cs
 !TSSGravity.cs
 !TSSVelocity.cs
+
+!deploy.bat
