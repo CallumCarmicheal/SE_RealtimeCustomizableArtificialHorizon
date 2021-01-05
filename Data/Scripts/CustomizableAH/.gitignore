@@ -4,9 +4,12 @@
 # Except...
 !.gitignore
 !CustomizableAH.csproj
-!Logger.cs
-!TSSArtificialHorizon.cs
 !Gwindalmir
+
+!AHConfig.cs
+!Logger.cs
+
+!TSSArtificialHorizon.cs
 !TSSGravity.cs
 !TSSVelocity.cs
 

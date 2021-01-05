@@ -10,6 +10,9 @@ using Sandbox.ModAPI;
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Text;
 using Gwindalmir.RealTimeTSS;
 using VRage;
 using VRage.Game.GUI.TextPanel;
@@ -48,8 +51,7 @@ namespace CustomizableAH {
         private Vector2 m_ladderStepTextOffset;
 
         private MyPlanet m_nearestPlanet;
-
-        private string m_DebugString = "";
+        private AHConfig m_config;
 
         public TSSArtificialHorizon(IMyTextSurface surface, VRage.Game.ModAPI.Ingame.IMyCubeBlock block, Vector2 size)
                 : base(surface, block, size) {
@@ -79,8 +81,7 @@ namespace CustomizableAH {
 
             m_updateRateDivisor = 1; // 30 FPS
 
-            // Load block settings
-            m_DebugString = DateTime.Now.ToString();
+            m_config = new AHConfig(this, surface, block, size);
         }
 
         public override List<MySprite> RunSpecial() {
@@ -97,8 +98,19 @@ namespace CustomizableAH {
         }
 
         public override void Draw(MySpriteDrawFrame frame) {
-            if (m_grid?.Physics == null)
+            // Dont render if no physics or only render every 100 ticks.
+            if (m_grid?.Physics == null && m_config.PauseOnNoPhysics) {
+                m_tickCounter++;
+
+                // Wrap around tick counter to 10000's
+                if (m_tickCounter > 10000) m_tickCounter -= 10000;
+
+                // Update config every 100 ticks
+                if (m_tickCounter % 100 == 0)
+                    m_config.ReloadValues();
+           
                 return;
+            }
 
             Matrix blockLocalMat;
             m_block.Orientation.GetMatrix(out blockLocalMat);
@@ -106,6 +118,8 @@ namespace CustomizableAH {
             m_ownerTransform = blockLocalMat * m_grid.PositionComp.WorldMatrixRef;
             m_ownerTransform.Translation = m_block.GetPosition();
             m_ownerTransform.Orthogonalize();
+
+            configurationSettings(frame);
 
             float interference;
             var gravity = MyAPIGateway.Physics.CalculateNaturalGravityAt(m_ownerTransform.Translation, out interference);
@@ -115,6 +129,35 @@ namespace CustomizableAH {
                 DrawSpaceDisplay(frame, m_ownerTransform);
 
             m_tickCounter++;
+
+            // Wrap around tick counter to 10000's
+            if (m_tickCounter > 10000) m_tickCounter -= 10000;
+        }
+
+        private void configurationSettings(MySpriteDrawFrame frame) {
+            if (m_tickCounter % 20 == 0) 
+                m_config.ReloadValues();
+
+            if (this.m_config.ParsedIni == false) {
+                string errorText = "Status to Parse INI: " + (this.m_config.ParsedIni ? "T" : "F");
+
+                Vector2 surfaceSize = Surface.TextureSize;
+                Vector2 screenCenter = surfaceSize * 0.5f;
+                Vector2 avgViewportSize = Surface.SurfaceSize - 12f;
+
+                float minSideLength = Math.Min(avgViewportSize.X, avgViewportSize.Y);
+                Vector2 squareViewportSize = new Vector2(minSideLength, minSideLength);
+                avgViewportSize = (avgViewportSize + squareViewportSize) * 0.5f;
+
+                Vector2 textBoxSize = Surface.MeasureStringInPixels(new StringBuilder(errorText), "Debug", m_fontScale);
+                textBoxSize.X += (m_fontScale * 25);
+                Vector2 textPosition = new Vector2(screenCenter.X, 0) + new Vector2(0, avgViewportSize.Y * 0.1f);
+
+                DrawTextBox(frame, textBoxSize, textPosition, Color.Red,
+                    Color.Red, Color.Transparent, m_fontScale, errorText);
+            }
+
+           
         }
 
         #region Planet Display
@@ -141,8 +184,9 @@ namespace CustomizableAH {
             DrawHorizon(frame, screenForward2D, rollAngle);
             DrawLadder(frame, gravity, worldTrans, pitchAngle, horizonForward, rollAngle);
 
-            if (m_tickCounter % 1000 == 0)
+            if (m_tickCounter % 1000 == 0) {
                 m_nearestPlanet = MyGamePruningStructure.GetClosestPlanet(worldTrans.Translation);
+            }
 
             if (m_nearestPlanet != null) {
                 int radarAltitude = DrawAltitudeWarning(frame, worldTrans, m_nearestPlanet);
@@ -159,15 +203,6 @@ namespace CustomizableAH {
             DrawVelocityVector(frame, velocity, worldTrans);
             DrawBoreSight(frame);
 
-            DrawDebugString(frame);
-        }
-
-        private void DrawDebugString(MySpriteDrawFrame frame) {
-            var loc = new Vector2(10, 10);
-            // m_DebugString = m_block.DisplayNameText;
-
-            AddTextBox(frame, loc + m_textBoxSize * 0.5f, m_textBoxSize, m_DebugString, m_fontId, m_fontScale,
-                m_foregroundColor, m_foregroundColor, "AH_TextBox", m_textOffsetInsideBox.X);
         }
 
         private void DrawHorizon(MySpriteDrawFrame frame, Vector2 screenForward2D, double rollAngle) {
@@ -176,7 +211,7 @@ namespace CustomizableAH {
             drawPosGround.Rotate(rollAngle);
 
             var bgSprite = new MySprite(SpriteType.TEXTURE, MyTextSurfaceHelper.DEFAULT_BG_TEXTURE, m_halfSize + drawPosGround + screenForward2D, size,
-                new Color(m_foregroundColor, .5f),
+                new Color(m_config.GridBackgroundColor, m_config.GridBackgroundOpacity),
                 rotation: (float)rollAngle);
             frame.Add(bgSprite);
 
@@ -199,7 +234,6 @@ namespace CustomizableAH {
         private void DrawLadder(MySpriteDrawFrame frame, Vector3 gravity, MatrixD worldTrans, double pitchAngle, Vector3D horizonForward, double rollAngle) {
             double closestFullAngle = (pitchAngle / ANGLE_STEP); // 0.174533 is 10 deg
             int roundedClosestFullAngle = (int)Math.Round(closestFullAngle);
-
 
             for (int i = roundedClosestFullAngle - 5; i <= roundedClosestFullAngle + 5; i++) {
                 if (i == 0)
@@ -347,6 +381,47 @@ namespace CustomizableAH {
             var barSize = new Vector2(velBarMax.X - velTbDraw.X - m_textBoxSize.X - m_textOffsetInsideBox.X, m_textBoxSize.Y);
             AddProgressBar(frame, velTbDraw + new Vector2(barSize.X * 0.5f + m_textBoxSize.X + m_textOffsetInsideBox.X, m_textBoxSize.Y / 2f), barSize, percentage, barBgColor, m_foregroundColor);
         }
+        #endregion
+
+        #region Helper Functions
+            /// <summary>
+            /// Original Author: Whis
+            /// </summary>
+            /// <param name="frame"></param>
+            /// <param name="size"></param>
+            /// <param name="position"></param>
+            /// <param name="textColor"></param>
+            /// <param name="borderColor"></param>
+            /// <param name="backgroundColor"></param>
+            /// <param name="textSize"></param>
+            /// <param name="text"></param>
+            /// <param name="title"></param>
+            void DrawTextBox(MySpriteDrawFrame frame, Vector2 size, Vector2 position, Color textColor, Color borderColor, Color backgroundColor, float textSize, string text, string title = "") {
+                Vector2 textPos = position;
+                textPos.Y -= size.Y * 0.5f;
+
+                Vector2 titlePos = position;
+                titlePos.Y -= size.Y * 1.5f;
+
+                MySprite background = new MySprite(SpriteType.TEXTURE, "SquareSimple", color: backgroundColor, size: size);
+                background.Position = position;
+                frame.Add(background);
+
+                MySprite perimeter = new MySprite(SpriteType.TEXTURE, "AH_TextBox", color: borderColor, size: size);
+                perimeter.Position = position;
+
+                MySprite textSprite = MySprite.CreateText(text, "Debug", textColor, scale: textSize);
+                textSprite.Position = textPos;
+
+                frame.Add(perimeter);
+                frame.Add(textSprite);
+
+                if (!string.IsNullOrWhiteSpace(title)) {
+                    MySprite titleSprite = MySprite.CreateText(title, "Debug", textColor, scale: textSize);
+                    titleSprite.Position = titlePos;
+                    frame.Add(titleSprite);
+                }
+            }
         #endregion
 
         private MySpriteDrawFrame DrawSpeedIndicator(MySpriteDrawFrame frame, Vector2 drawPos, Vector2 textBoxSize, Vector3 velocity) {
