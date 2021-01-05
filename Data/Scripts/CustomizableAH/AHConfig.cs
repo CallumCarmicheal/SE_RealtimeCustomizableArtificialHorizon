@@ -27,19 +27,31 @@ namespace CustomizableAH {
 
     class AHConfig {
         private Color? _textColor = null;
-        private Color? _errorBorderColor = Color.Red;
-        private Color? _gridBackgroundColor = null;
+        private Color? _errorBorder = Color.Red;
+        private Color? _gridBackground = null;
+        private Color? _horizonLine = null;
+        private Color? _ladder = null;
+        private Color? _ladderText = null;
+        private Color? _radarAltitudeWarning = null;
+        private Color? _pullUpWarning = null;
+        private Color? _velocityVector = null;
+        private Color? _boresight = null;
 
-        public Color HorizonLine => GetColor(_gridBackgroundColor);
-        public Color GridBackgroundColor => GetColor(_gridBackgroundColor);
         public Color TextColor => GetColor(_textColor);
-        public Color ErrorBorderColor => GetColor(_errorBorderColor);
+        public Color ErrorBorder => GetColor(_errorBorder);
+        public Color GridBackground => GetColor(_gridBackground);
+        public Color HorizonLine => GetColor(_horizonLine);
+        public Color Ladder => GetColor(_ladder);
+        public Color LadderText => GetColor(_ladderText);
+        public Color RadarAltitudeWarning => GetColor(_radarAltitudeWarning);
+        public Color PullUpWarning => GetColor(_pullUpWarning);
+        public Color VelocityVector => GetColor(_velocityVector);
+        public Color Boresight => GetColor(_boresight);
 
         // ==========================
 
         public float DebugFloat1 { get; set; } = 10;
         public float GridBackgroundOpacity { get; set; } = 0.5f;
-
         public bool PauseOnNoPhysics = true;
 
         // =========================
@@ -82,9 +94,15 @@ namespace CustomizableAH {
             ini.Lambda(section, "PauseOnNoPhysics", () => PauseOnNoPhysics + "", (v) => PauseOnNoPhysics = v.ToBoolean());
 
             IniGetColor(ini, section, "TextColor", () => _textColor, (c) => _textColor = c);
-            IniGetColor(ini, section, "ErrorBorderColor", () => _errorBorderColor, (c) => _errorBorderColor = c);
-            IniGetColor(ini, section, "GridBackgroundColor", () => _gridBackgroundColor, (c) => _gridBackgroundColor = c);
-            ini.Lambda(section, "GridBackgroundOpacity", () => GridBackgroundOpacity + "", (v) => GridBackgroundOpacity = (float)v.ToDouble());
+            IniGetColor(ini, section, "ErrorBorder", () => _errorBorder, (c) => _errorBorder = c);
+            IniGetColor(ini, section, "GridBackground", () => _gridBackground, (c) => _gridBackground = c);
+            ini.Lambda(      section, "GridBackgroundOpacity", () => GridBackgroundOpacity + "", (v) => GridBackgroundOpacity = (float)v.ToDouble());
+            IniGetColor(ini, section, "HorizonLine", () => _horizonLine, (c) => _horizonLine = c);
+            IniGetColor(ini, section, "Ladder", () => _ladder, (c) => _ladder = c);
+            IniGetColor(ini, section, "RadarAltitudeWarning", () => _radarAltitudeWarning, (c) => _radarAltitudeWarning = c);
+            IniGetColor(ini, section, "PullUpWarning", () => _pullUpWarning, (c) => _pullUpWarning = c);
+            IniGetColor(ini, section, "VelocityVector", () => _velocityVector, (c) => _velocityVector = c);
+            IniGetColor(ini, section, "Boresight", () => _boresight, (c) => _boresight = c);
 
             _Terminal.CustomData = ini.ToString();
             ParsedIni = true;
@@ -200,7 +218,10 @@ namespace CustomizableAH {
                 Color? color = Set?.Invoke();
 
                 if (color != null) 
-                    ini.Set(section, name, color.ToString());
+                     ini.Set(section, name, color.Value.A != 255 
+                         ? $"{color.Value.R},{color.Value.G},{color.Value.B},{color.Value.A}"
+                         : $"{color.Value.R},{color.Value.G},{color.Value.B}");
+                else ini.Set(section, name, "FG");
             }
         }
 

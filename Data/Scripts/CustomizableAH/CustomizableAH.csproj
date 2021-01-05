@@ -5,6 +5,7 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AssemblyName>CustomizableAH</AssemblyName>
     <RootNamespace>CustomizableAH</RootNamespace>
+    <LangVersion>6</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

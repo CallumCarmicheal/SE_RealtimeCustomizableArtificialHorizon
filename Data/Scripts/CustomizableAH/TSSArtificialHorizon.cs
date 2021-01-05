@@ -51,7 +51,7 @@ namespace CustomizableAH {
         private Vector2 m_ladderStepTextOffset;
 
         private MyPlanet m_nearestPlanet;
-        private AHConfig m_config;
+        private AHConfig colors;
 
         public TSSArtificialHorizon(IMyTextSurface surface, VRage.Game.ModAPI.Ingame.IMyCubeBlock block, Vector2 size)
                 : base(surface, block, size) {
@@ -81,7 +81,7 @@ namespace CustomizableAH {
 
             m_updateRateDivisor = 1; // 30 FPS
 
-            m_config = new AHConfig(this, surface, block, size);
+            colors = new AHConfig(this, surface, block, size);
         }
 
         public override List<MySprite> RunSpecial() {
@@ -99,7 +99,7 @@ namespace CustomizableAH {
 
         public override void Draw(MySpriteDrawFrame frame) {
             // Dont render if no physics or only render every 100 ticks.
-            if (m_grid?.Physics == null && m_config.PauseOnNoPhysics) {
+            if (m_grid?.Physics == null && colors.PauseOnNoPhysics) {
                 m_tickCounter++;
 
                 // Wrap around tick counter to 10000's
@@ -107,7 +107,7 @@ namespace CustomizableAH {
 
                 // Update config every 100 ticks
                 if (m_tickCounter % 100 == 0)
-                    m_config.ReloadValues();
+                    colors.ReloadValues();
            
                 return;
             }
@@ -136,10 +136,10 @@ namespace CustomizableAH {
 
         private void configurationSettings(MySpriteDrawFrame frame) {
             if (m_tickCounter % 20 == 0) 
-                m_config.ReloadValues();
+                colors.ReloadValues();
 
-            if (this.m_config.ParsedIni == false) {
-                string errorText = "Status to Parse INI: " + (this.m_config.ParsedIni ? "T" : "F");
+            if (colors.ParsedIni == false) {
+                string errorText = "Status to Parse INI: " + (this.colors.ParsedIni ? "T" : "F");
 
                 Vector2 surfaceSize = Surface.TextureSize;
                 Vector2 screenCenter = surfaceSize * 0.5f;
@@ -153,8 +153,8 @@ namespace CustomizableAH {
                 textBoxSize.X += (m_fontScale * 25);
                 Vector2 textPosition = new Vector2(screenCenter.X, 0) + new Vector2(0, avgViewportSize.Y * 0.1f);
 
-                DrawTextBox(frame, textBoxSize, textPosition, Color.Red,
-                    Color.Red, Color.Transparent, m_fontScale, errorText);
+                DrawTextBox(frame, textBoxSize, textPosition, colors.TextColor,
+                    colors.ErrorBorder, Color.Transparent, m_fontScale, errorText);
             }
 
            
@@ -211,7 +211,7 @@ namespace CustomizableAH {
             drawPosGround.Rotate(rollAngle);
 
             var bgSprite = new MySprite(SpriteType.TEXTURE, MyTextSurfaceHelper.DEFAULT_BG_TEXTURE, m_halfSize + drawPosGround + screenForward2D, size,
-                new Color(m_config.GridBackgroundColor, m_config.GridBackgroundOpacity),
+                new Color(colors.GridBackground, colors.GridBackgroundOpacity),
                 rotation: (float)rollAngle);
             frame.Add(bgSprite);
 
@@ -227,7 +227,7 @@ namespace CustomizableAH {
             frame.Add(bgSprite);
 
             var horizonLine = new MySprite(SpriteType.TEXTURE, MyTextSurfaceHelper.BLANK_TEXTURE, m_halfSize + screenForward2D, new Vector2(m_screenDiag, 3f * m_maxScale),
-                m_foregroundColor, rotation: (float)rollAngle);
+                colors.HorizonLine, rotation: (float)rollAngle);
             frame.Add(horizonLine);
         }
 
@@ -249,7 +249,7 @@ namespace CustomizableAH {
                 var textureLadder = i * ANGLE_STEP < 0 ? "AH_GravityHudNegativeDegrees" : "AH_GravityHudPositiveDegrees";
 
                 var ladderStep = new MySprite(SpriteType.TEXTURE, textureLadder, m_halfSize + screenLadder2D, m_ladderStepSize,
-                    m_foregroundColor, rotation: (float)rollAngle);
+                    colors.Ladder, rotation: (float)rollAngle);
                 frame.Add(ladderStep);
 
                 var fontSizeLadder = m_fontScale * LADDER_TEXT_SIZE_MULTIPLIER;
@@ -260,14 +260,14 @@ namespace CustomizableAH {
                 var textOffset = new Vector2(-m_ladderStepSize.X * 0.55f, 0f);
                 textOffset.Rotate(rollAngle);
 
-                var angleTextLeft = MySprite.CreateText(stringToDraw, m_fontId, m_foregroundColor, fontSizeLadder, TextAlignment.RIGHT);
+                var angleTextLeft = MySprite.CreateText(stringToDraw, m_fontId, colors.LadderText, fontSizeLadder, TextAlignment.RIGHT);
                 angleTextLeft.Position = m_halfSize + screenLadder2D + textOffset - m_ladderStepTextOffset;
                 frame.Add(angleTextLeft);
 
                 textOffset = new Vector2(m_ladderStepSize.X * 0.55f, 0f);
                 textOffset.Rotate(rollAngle);
 
-                var angleTextRight = MySprite.CreateText(stringToDraw, m_fontId, m_foregroundColor, fontSizeLadder, TextAlignment.LEFT);
+                var angleTextRight = MySprite.CreateText(stringToDraw, m_fontId, colors.LadderText, fontSizeLadder, TextAlignment.LEFT);
                 angleTextRight.Position = m_halfSize + screenLadder2D + textOffset - m_ladderStepTextOffset;
                 frame.Add(angleTextRight);
             }
@@ -292,7 +292,7 @@ namespace CustomizableAH {
             if (m_showAltWarning) {
                 var text = MyTexts.Get(MySpaceTexts.DisplayName_TSS_ArtificialHorizon_AltitudeWarning);
                 var sizePxRadarAlt = m_surface.MeasureStringInPixels(text, m_fontId, m_fontScale);
-                var radarAltitudeWarning = MySprite.CreateText(text.ToString(), m_fontId, m_foregroundColor, m_fontScale, TextAlignment.LEFT);
+                var radarAltitudeWarning = MySprite.CreateText(text.ToString(), m_fontId, colors.RadarAltitudeWarning, m_fontScale, TextAlignment.LEFT);
                 radarAltitudeWarning.Position = m_halfSize + new Vector2(0, 100) - sizePxRadarAlt * 0.5f;
                 frame.Add(radarAltitudeWarning);
             }
@@ -308,17 +308,18 @@ namespace CustomizableAH {
             var radarAltDrawPos = m_halfSize + new Vector2(115, 80) * m_maxScale;
 
             AddTextBox(frame, radarAltDrawPos + textBoxSize * 0.5f, textBoxSize, radarAltString, m_fontId, m_fontScale,
-                m_foregroundColor, m_foregroundColor, "AH_TextBox", m_textOffsetInsideBox.X);
+                colors.TextColor, colors.TextColor, "AH_TextBox", m_textOffsetInsideBox.X);
 
             if (radarAltitude < RADAR_ALTITUDE_THRESHOLD) {
-                var radarSprite = MySprite.CreateText("R", m_fontId, m_foregroundColor, m_fontScale, TextAlignment.LEFT);
+                var radarSprite = MySprite.CreateText("R", m_fontId, colors.TextColor, m_fontScale, TextAlignment.LEFT);
                 var pos = radarAltDrawPos + textBoxSize * 0.5f;
                 radarSprite.Position = pos + new Vector2(textBoxSize.X, -textBoxSize.Y) * 0.5f + m_textOffsetInsideBox;
                 frame.Add(radarSprite);
             }
 
             var diffPerSec = (seaLevelAltitude - m_lastSeaLevelAlt) * 30;
-            AddTextBox(frame, radarAltDrawPos + new Vector2(textBoxSize.X * 0.5f, -textBoxSize.Y * 0.5f), textBoxSize, ((int)diffPerSec).ToString(), m_fontId, m_fontScale, m_foregroundColor, m_foregroundColor, textOffset: m_textOffsetInsideBox.X);
+            AddTextBox(frame, radarAltDrawPos + new Vector2(textBoxSize.X * 0.5f, -textBoxSize.Y * 0.5f), textBoxSize, ((int)diffPerSec).ToString(), 
+                m_fontId, m_fontScale, colors.TextColor, colors.TextColor, textOffset: m_textOffsetInsideBox.X);
 
             return seaLevelAltitude;
         }
@@ -328,7 +329,8 @@ namespace CustomizableAH {
             IHitInfo hitInfo;
             MyAPIGateway.Physics.CastRay(worldTrans.Translation, worldTrans.Translation + velocityTest, out hitInfo, 14);
             if (hitInfo != null && m_tickCounter >= 0 && m_tickCounter % 100 > 10) {
-                var pullUpSymbol = new MySprite(SpriteType.TEXTURE, "AH_PullUp", m_halfSize, new Vector2(150, 180), m_foregroundColor,
+                var pullUpSymbol = new MySprite(SpriteType.TEXTURE, "AH_PullUp", m_halfSize, new Vector2(150, 180), 
+                    colors.PullUpWarning,
                     rotation: (float)rollAngle);
                 frame.Add(pullUpSymbol);
             }
@@ -347,14 +349,14 @@ namespace CustomizableAH {
                     projectionVel2D = new Vector2(0, 0);
 
                 var projectionVelDraw = new MySprite(SpriteType.TEXTURE, "AH_VelocityVector", m_halfSize + projectionVel2D, new Vector2(50, 50) * m_maxScale,
-                    m_foregroundColor, rotation: (float)0);
+                    colors.VelocityVector, rotation: (float)0);
                 frame.Add(projectionVelDraw);
             }
         }
 
         private void DrawBoreSight(MySpriteDrawFrame frame) {
             var boreSight = new MySprite(SpriteType.TEXTURE, "AH_BoreSight", m_size * 0.5f + new Vector2(0, 19) * m_maxScale, new Vector2(50, 50) * m_maxScale,
-                m_foregroundColor, rotation: (float)-Math.PI * 0.5f);
+                colors.Boresight, rotation: (float)-Math.PI * 0.5f);
 
             frame.Add(boreSight);
         }
