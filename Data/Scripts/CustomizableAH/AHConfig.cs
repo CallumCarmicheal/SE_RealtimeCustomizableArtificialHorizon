@@ -130,12 +130,12 @@ namespace CustomizableAH {
                     default:
                         Get?.Invoke(_Horizon.ForegroundColor);
                         break;
-                    } 
-                }
-
-                else if (commaCount == 0) {
+                    }
+                    ini.SetComment(section, name, "");
+                } else if (commaCount == 0) {
                     int value;
                     if (int.TryParse(strColor, out value)) {
+                        ini.SetComment(section, name, "");
                         Get?.Invoke(new Color(value, value, value, 255));
                     }
                     else {
@@ -155,12 +155,13 @@ namespace CustomizableAH {
                         var error = "Error: " + strColor;
                         if (!tryRgb) error += ", RGB not valid int";
                         if (!tryA)   error += ", Alpha not valid int";
-                        ini.SetComment(section, name, "Failed to parse as single integer");
+                        ini.SetComment(section, name, error);
 
                         Get?.Invoke(_Horizon.ForegroundColor);
                         return;
                     }
 
+                    ini.SetComment(section, name, "");
                     Get?.Invoke(new Color(rgb, rgb, rgb, a));
                 }
 
@@ -178,16 +179,17 @@ namespace CustomizableAH {
                         if (!tryR) error += ", Red not valid int";
                         if (!tryG) error += ", Green not valid int";
                         if (!tryB) error += ", Blue not valid int";
-                        ini.SetComment(section, name, "Failed to parse as single integer");
+                        ini.SetComment(section, name, error);
 
                         Get?.Invoke(_Horizon.ForegroundColor);
                         return;
                     }
 
+                    ini.SetComment(section, name, "");
                     Get?.Invoke(new Color(r, g, b, 255));
                 } 
                 else if (commaCount == 3) {
-                    unpack = strColor.Unformat("{0},{1},{2}");
+                    unpack = strColor.Unformat("{0},{1},{2},{3}");
 
                     int r = 0, g = 0, b = 0, a = 0;
 
@@ -203,12 +205,13 @@ namespace CustomizableAH {
                         if (!tryG) error += ", Green not valid int";
                         if (!tryB) error += ", Blue not valid int";
                         if (!tryA) error += ", Alpha not valid int";
-                        ini.SetComment(section, name, "Failed to parse as single integer");
+                        ini.SetComment(section, name, error);
 
                         Get?.Invoke(_Horizon.ForegroundColor);
                         return;
                     }
 
+                    ini.SetComment(section, name, "");
                     Get?.Invoke(new Color(r, g, b, 255));
                 } else {
                     ini.SetComment(section, name, "Invalid format for color, (FG,BG)|(ALL)|(RGB,A)|(R,G,B)|(R,G,B,A)");
@@ -222,6 +225,7 @@ namespace CustomizableAH {
                          ? $"{color.Value.R},{color.Value.G},{color.Value.B},{color.Value.A}"
                          : $"{color.Value.R},{color.Value.G},{color.Value.B}");
                 else ini.Set(section, name, "FG");
+                ini.SetComment(section, name, "");
             }
         }
 
