@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Mime;
@@ -163,7 +164,7 @@ namespace CustomizableAH {
                 string[] unpack = null;
 
                 int commaCount = strColor.Count(f => (f == ','));
-
+                
                 if (strColor == "FG" || strColor == "BG") {
                     switch (strColor) {
                     case "BG":
@@ -174,7 +175,35 @@ namespace CustomizableAH {
                         break;
                     }
                     ini.SetComment(section, name, "");
-                } else if (commaCount == 0) {
+                } 
+                
+                else if (strColor.StartsWith("#")) {
+                    strColor = strColor.TrimStart('#').Trim();
+
+                    try {
+                        Color col; // from System.Drawing or System.Windows.Media
+                        if (strColor.Length == 6)
+                            col = new Color(255, // hardcoded opaque
+                                int.Parse(strColor.Substring(0, 2), NumberStyles.HexNumber),
+                                int.Parse(strColor.Substring(2, 2), NumberStyles.HexNumber),
+                                int.Parse(strColor.Substring(4, 2), NumberStyles.HexNumber));
+                        else // assuming length of 8
+                            col = new Color(
+                                int.Parse(strColor.Substring(0, 2), NumberStyles.HexNumber),
+                                int.Parse(strColor.Substring(2, 2), NumberStyles.HexNumber),
+                                int.Parse(strColor.Substring(4, 2), NumberStyles.HexNumber),
+                                int.Parse(strColor.Substring(6, 2), NumberStyles.HexNumber));
+
+                        ini.SetComment(section, name, "");
+                        Get?.Invoke(col);
+                    } catch (Exception ex) {
+                        ini.SetComment(section, name, "Failed to parse HEX COLOR: " + ex.Message);
+                        Get?.Invoke(_Horizon.ForegroundColor);
+                    }
+                }
+
+
+                else if (commaCount == 0) {
                     int value;
                     if (int.TryParse(strColor, out value)) {
                         ini.SetComment(section, name, "");
