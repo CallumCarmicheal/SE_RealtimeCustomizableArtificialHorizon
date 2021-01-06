@@ -22,10 +22,6 @@ using IMyTerminalBlock = Sandbox.ModAPI.Ingame.IMyTerminalBlock;
 
 namespace CustomizableAH {
 
-    class AHConfigValues {
-   
-    }
-
     class AHConfig {
         private Color? _textColor = null;
         private Color? _errorBorder = Color.Red;
@@ -49,7 +45,6 @@ namespace CustomizableAH {
         public Color Boresight => GetColor(_boresight);
         public Color AltimeterVSpeed => GetColor(_altimeterVSpeed);
 
-
         public TextAndBorderColor AltimeterHeight { get; }
         public TextAndBorderColor SpeedIndicator { get; }
 
@@ -57,13 +52,9 @@ namespace CustomizableAH {
 
         // ==========================
 
-        public float RotationAmount { get; set; } = 0;
-
         public float VelocityResetAmount { get; set; } = 9;
 
         // =========================
-
-        protected AHConfigValues values;
 
         public TSSArtificialHorizon _Horizon { get; set; }
         public IMyTextSurface _Surface { get; }
@@ -104,8 +95,8 @@ namespace CustomizableAH {
             }
 
             ini.Lambda(section, "VelocityResetAmount", () => VelocityResetAmount + "", (v) => VelocityResetAmount = (float) v.ToDouble());
-            ini.Lambda(section, "RotationAmount", () => RotationAmount + "", (v) => RotationAmount = (float) v.ToDouble());
 
+            IniGetColor(ini, section, "TextColor", () => _textColor, (c) => _textColor = c);
             IniGetColor(ini, section, "TextColor", () => _textColor, (c) => _textColor = c);
             IniGetColor(ini, section, "ErrorBorder", () => _errorBorder, (c) => _errorBorder = c);
             IniGetColor(ini, section, "HorizonLine", () => _horizonLine, (c) => _horizonLine = c);
@@ -133,6 +124,34 @@ namespace CustomizableAH {
         public Color GetColor(Color? valuesTextColor, float opacity) {
             if (valuesTextColor == null) return new Color(_Horizon.ForegroundColor, opacity);
             return new Color(valuesTextColor.Value, opacity);
+        }
+
+        public T ParseEnum<T>(string text, T @default) where T : struct {
+            T enumValue;
+            if (Enum.TryParse(text, out enumValue)) 
+                return enumValue;
+            return @default;
+        }
+
+        public void IniGetEnum<T>(MyIni ini, string section, string name, T @default, Func<T> Set, Action<T> Get) where T : struct {
+            MyIniValue iniValue;
+            if (!(iniValue = ini.Get(section, name)).IsEmpty) {
+                T enumValue;
+                if (Enum.TryParse(iniValue.ToString(), out enumValue)) {
+                    ini.SetComment(section, name, "");
+                    Get?.Invoke(enumValue);
+                }
+                else {
+                    var values = string.Join(", ", Enum.GetValues(typeof(T)));
+                    ini.SetComment(section, name, "Failed to parse enum, Available values: " + values);
+                    Get?.Invoke(@default);
+                }
+            } else {
+                var value= Set?.Invoke();
+
+                ini.Set(section, name, value != null ? value.ToString() : @default.ToString());
+                ini.SetComment(section, name, "");
+            }
         }
 
         public void IniGetColor(MyIni ini, string section, string name, Func<Color?> Set, Action<Color?> Get) {
@@ -241,7 +260,7 @@ namespace CustomizableAH {
                     Get?.Invoke(_Horizon.ForegroundColor);
                 }
             } else {
-                Color? color = Set?.Invoke();
+                var color = Set?.Invoke();
 
                 if (color != null) 
                      ini.Set(section, name, color.Value.A != 255 

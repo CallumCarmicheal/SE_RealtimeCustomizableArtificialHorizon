@@ -216,26 +216,26 @@ namespace CustomizableAH {
             var bgSprite = new MySprite(SpriteType.TEXTURE, MyTextSurfaceHelper.DEFAULT_BG_TEXTURE, m_halfSize + drawPosGround + screenForward2D, size,
                 m_colors.BackgroundSections[0].Color,
                 rotation: (float)rollAngle);
-            frame.Add(bgSprite);
+            AddFrameElement(frame, bgSprite);
 
             bgSprite.Position = m_halfSize - drawPosGround + screenForward2D;
             bgSprite.Color = m_colors.BackgroundSections[1].Color;
-            frame.Add(bgSprite);
+            AddFrameElement(frame, bgSprite);
 
             drawPosGround = new Vector2(0, m_screenDiag * 1.5f);
             drawPosGround.Rotate(rollAngle);
             bgSprite.Position = m_halfSize + drawPosGround + screenForward2D;
             bgSprite.Color = m_colors.BackgroundSections[2].Color;
-            frame.Add(bgSprite);
+            AddFrameElement(frame, bgSprite);
 
             bgSprite.Color = m_colors.BackgroundSections[3].Color;
             bgSprite.Position = m_halfSize - drawPosGround + screenForward2D;
-            frame.Add(bgSprite);
+            AddFrameElement(frame, bgSprite);
 
             var horizonLine = new MySprite(SpriteType.TEXTURE, MyTextSurfaceHelper.BLANK_TEXTURE, m_halfSize + screenForward2D, new Vector2(m_screenDiag, 3f * m_maxScale),
                 m_colors.HorizonLine, rotation: (float)rollAngle);
 
-            frame.Add(horizonLine);
+            AddFrameElement(frame, horizonLine);
         }
 
         private void DrawLadder(MySpriteDrawFrame frame, Vector3 gravity, MatrixD worldTrans, double pitchAngle, Vector3D horizonForward, double rollAngle) {
@@ -257,7 +257,7 @@ namespace CustomizableAH {
 
                 var ladderStep = new MySprite(SpriteType.TEXTURE, textureLadder, m_halfSize + screenLadder2D, m_ladderStepSize,
                     m_colors.Ladder, rotation: (float)rollAngle);
-                frame.Add(ladderStep);
+                AddFrameElement(frame, ladderStep);
 
                 var fontSizeLadder = m_fontScale * LADDER_TEXT_SIZE_MULTIPLIER;
 
@@ -269,14 +269,14 @@ namespace CustomizableAH {
 
                 var angleTextLeft = MySprite.CreateText(stringToDraw, m_fontId, m_colors.LadderText, fontSizeLadder, TextAlignment.RIGHT);
                 angleTextLeft.Position = m_halfSize + screenLadder2D + textOffset - m_ladderStepTextOffset;
-                frame.Add(angleTextLeft);
+                AddFrameElement(frame, angleTextLeft);
 
                 textOffset = new Vector2(m_ladderStepSize.X * 0.55f, 0f);
                 textOffset.Rotate(rollAngle);
 
                 var angleTextRight = MySprite.CreateText(stringToDraw, m_fontId, m_colors.LadderText, fontSizeLadder, TextAlignment.LEFT);
                 angleTextRight.Position = m_halfSize + screenLadder2D + textOffset - m_ladderStepTextOffset;
-                frame.Add(angleTextRight);
+                AddFrameElement(frame, angleTextRight);
             }
         }
 
@@ -301,7 +301,7 @@ namespace CustomizableAH {
                 var sizePxRadarAlt = m_surface.MeasureStringInPixels(text, m_fontId, m_fontScale);
                 var radarAltitudeWarning = MySprite.CreateText(text.ToString(), m_fontId, m_colors.RadarAltitudeWarning, m_fontScale, TextAlignment.LEFT);
                 radarAltitudeWarning.Position = m_halfSize + new Vector2(0, 100) - sizePxRadarAlt * 0.5f;
-                frame.Add(radarAltitudeWarning);
+                AddFrameElement(frame, radarAltitudeWarning);
             }
 
             return radarAltitude;
@@ -321,7 +321,7 @@ namespace CustomizableAH {
                 var radarSprite = MySprite.CreateText("R", m_fontId, m_colors.AltimeterHeight.TextColor, m_fontScale, TextAlignment.LEFT);
                 var pos = radarAltDrawPos + textBoxSize * 0.5f;
                 radarSprite.Position = pos + new Vector2(textBoxSize.X, -textBoxSize.Y) * 0.5f + m_textOffsetInsideBox;
-                frame.Add(radarSprite);
+                AddFrameElement(frame, radarSprite);
             }
 
             // Speed
@@ -340,7 +340,7 @@ namespace CustomizableAH {
                 var pullUpSymbol = new MySprite(SpriteType.TEXTURE, "AH_PullUp", m_halfSize, new Vector2(150, 180), 
                     m_colors.PullUpWarning,
                     rotation: (float)rollAngle);
-                frame.Add(pullUpSymbol);
+                AddFrameElement(frame, pullUpSymbol);
             }
         }
 
@@ -358,7 +358,7 @@ namespace CustomizableAH {
 
                 var projectionVelDraw = new MySprite(SpriteType.TEXTURE, "AH_VelocityVector", m_halfSize + projectionVel2D, new Vector2(50, 50) * m_maxScale,
                     m_colors.VelocityVector, rotation: (float)0);
-                frame.Add(projectionVelDraw);
+                AddFrameElement(frame, projectionVelDraw);
             }
         }
 
@@ -366,7 +366,7 @@ namespace CustomizableAH {
             var boreSight = new MySprite(SpriteType.TEXTURE, "AH_BoreSight", m_size * 0.5f + new Vector2(0, 19) * m_maxScale, new Vector2(50, 50) * m_maxScale,
                 m_colors.Boresight, rotation: (float)-Math.PI * 0.5f);
 
-            frame.Add(boreSight);
+            AddFrameElement(frame, boreSight);
         }
         #endregion
 
@@ -415,7 +415,7 @@ namespace CustomizableAH {
 
                 MySprite background = new MySprite(SpriteType.TEXTURE, "SquareSimple", color: backgroundColor, size: size);
                 background.Position = position;
-                frame.Add(background);
+                AddFrameElement(frame, background);
 
                 MySprite perimeter = new MySprite(SpriteType.TEXTURE, "AH_TextBox", color: borderColor, size: size);
                 perimeter.Position = position;
@@ -423,14 +423,54 @@ namespace CustomizableAH {
                 MySprite textSprite = MySprite.CreateText(text, "Debug", textColor, scale: textSize);
                 textSprite.Position = textPos;
 
-                frame.Add(perimeter);
-                frame.Add(textSprite);
+                AddFrameElement(frame, perimeter);
+                AddFrameElement(frame, textSprite);
 
                 if (!string.IsNullOrWhiteSpace(title)) {
                     MySprite titleSprite = MySprite.CreateText(title, "Debug", textColor, scale: textSize);
                     titleSprite.Position = titlePos;
-                    frame.Add(titleSprite);
+                    AddFrameElement(frame, titleSprite);
                 }
+            }
+
+           
+            protected MySpriteDrawFrame AddTextBox( MySpriteDrawFrame frame, Vector2 position, Vector2 size, string text, string font,
+                    float scale, Color bgColor, Color textColor, string bgSprite = null, float textOffset = 0.0f) {
+
+                Vector2 position1 = position + new Vector2(size.X * 0.5f, 0.0f);
+                if (!string.IsNullOrEmpty(bgSprite)) {
+                    MySprite sprite = MySprite.CreateSprite(bgSprite, position1, size);
+                    sprite.Color = new Color?(bgColor);
+                    sprite.Alignment = TextAlignment.RIGHT;
+
+                    AddFrameElement(frame, sprite);
+                }
+
+                MySprite text1 = MySprite.CreateText(text, font, textColor, scale, TextAlignment.RIGHT);
+                text1.Position = new Vector2?(position1 + new Vector2(-textOffset, (float)(-(double)size.Y * 0.5)));
+                text1.Size = new Vector2?(size);
+                AddFrameElement(frame, text1);
+                return frame;
+            }
+
+            protected MySpriteDrawFrame AddProgressBar( MySpriteDrawFrame frame, Vector2 position, Vector2 size, float ratio,
+                    Color barBgColor, Color barFgColor, string barBgSprite = null, string barFgSprite = null) {
+                MySprite mySprite = new MySprite(data: (barBgSprite ?? "SquareSimple"), color: new Color?(barBgColor));
+                mySprite.Alignment = TextAlignment.LEFT;
+                mySprite.Position = new Vector2?(position - new Vector2(size.X * 0.5f, 0.0f));
+                mySprite.Size = new Vector2?(size);
+                MySprite sprite1 = mySprite;
+                AddFrameElement(frame, sprite1);
+
+                mySprite = new MySprite(data: (barFgSprite ?? "SquareSimple"), color: new Color?(barFgColor));
+                mySprite.Alignment = TextAlignment.LEFT;
+                mySprite.Position = new Vector2?(position - new Vector2(size.X * 0.5f, 0.0f));
+                mySprite.Size = new Vector2?(new Vector2(size.X * ratio, size.Y));
+
+                MySprite sprite2 = mySprite;
+                AddFrameElement(frame, sprite2);
+
+                return frame;
             }
         #endregion
 
@@ -443,10 +483,11 @@ namespace CustomizableAH {
         }
 
         private MySpriteDrawFrame AddFrameElement(MySpriteDrawFrame frame, MySprite sprite) {
-
-            // sprite.RotationOrScale += m_colors.RotationAmount;
+            frame.Add(sprite);
 
             return frame;
         }
+
+
     }
 }
