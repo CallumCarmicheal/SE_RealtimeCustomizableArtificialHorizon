@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Mime;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using EmptyKeys.UserInterface.Generated.StoreBlockView_Bindings;
@@ -28,7 +29,6 @@ namespace CustomizableAH {
     class AHConfig {
         private Color? _textColor = null;
         private Color? _errorBorder = Color.Red;
-        private Color? _gridBackground = null;
         private Color? _horizonLine = null;
         private Color? _ladder = null;
         private Color? _ladderText = null;
@@ -36,10 +36,10 @@ namespace CustomizableAH {
         private Color? _pullUpWarning = null;
         private Color? _velocityVector = null;
         private Color? _boresight = null;
+        private Color? _altimeterVSpeed = null;
 
         public Color TextColor => GetColor(_textColor);
         public Color ErrorBorder => GetColor(_errorBorder);
-        public Color GridBackground => GetColor(_gridBackground);
         public Color HorizonLine => GetColor(_horizonLine);
         public Color Ladder => GetColor(_ladder);
         public Color LadderText => GetColor(_ladderText);
@@ -47,12 +47,19 @@ namespace CustomizableAH {
         public Color PullUpWarning => GetColor(_pullUpWarning);
         public Color VelocityVector => GetColor(_velocityVector);
         public Color Boresight => GetColor(_boresight);
+        public Color AltimeterVSpeed => GetColor(_altimeterVSpeed);
+
+
+        public TextAndBorderColor AltimeterHeight { get; }
+        public TextAndBorderColor SpeedIndicator { get; }
+
+        public HorizonBackground[] BackgroundSections { get; }
 
         // ==========================
 
-        public float DebugFloat1 { get; set; } = 10;
-        public float GridBackgroundOpacity { get; set; } = 0.5f;
-        public bool PauseOnNoPhysics = true;
+        public float RotationAmount { get; set; } = 9;
+
+        public float VelocityResetAmount { get; set; } = 9;
 
         // =========================
 
@@ -73,6 +80,13 @@ namespace CustomizableAH {
             _Size = size;
             _Terminal = block as IMyTerminalBlock;
 
+            BackgroundSections = new HorizonBackground[4];
+            for (int x = 0; x < 4; x++)
+                BackgroundSections[x] = new HorizonBackground(this, $"GravityBackground{x}_");
+
+            SpeedIndicator = new TextAndBorderColor(this, "SpeedIndicator");
+            AltimeterHeight = new TextAndBorderColor(this, "AltimeterHeight");
+
             ReloadValues();
         }
 
@@ -89,30 +103,38 @@ namespace CustomizableAH {
                 return;
             }
 
-            ini.Set(section, "LastTick", DateTime.Now + "");
-            ini.Lambda(section, "DebugFloat1", () => DebugFloat1 + "", (v) => DebugFloat1 = (float) v.ToDouble());
-            ini.Lambda(section, "PauseOnNoPhysics", () => PauseOnNoPhysics + "", (v) => PauseOnNoPhysics = v.ToBoolean());
+            ini.Lambda(section, "VelocityResetAmount", () => VelocityResetAmount + "", (v) => VelocityResetAmount = (float) v.ToDouble());
 
             IniGetColor(ini, section, "TextColor", () => _textColor, (c) => _textColor = c);
             IniGetColor(ini, section, "ErrorBorder", () => _errorBorder, (c) => _errorBorder = c);
-            IniGetColor(ini, section, "GridBackground", () => _gridBackground, (c) => _gridBackground = c);
-            ini.Lambda(      section, "GridBackgroundOpacity", () => GridBackgroundOpacity + "", (v) => GridBackgroundOpacity = (float)v.ToDouble());
             IniGetColor(ini, section, "HorizonLine", () => _horizonLine, (c) => _horizonLine = c);
             IniGetColor(ini, section, "Ladder", () => _ladder, (c) => _ladder = c);
+            IniGetColor(ini, section, "LadderText", () => _ladderText, (c) => _ladderText = c);
             IniGetColor(ini, section, "RadarAltitudeWarning", () => _radarAltitudeWarning, (c) => _radarAltitudeWarning = c);
             IniGetColor(ini, section, "PullUpWarning", () => _pullUpWarning, (c) => _pullUpWarning = c);
             IniGetColor(ini, section, "VelocityVector", () => _velocityVector, (c) => _velocityVector = c);
             IniGetColor(ini, section, "Boresight", () => _boresight, (c) => _boresight = c);
 
+            for (int x = 0; x < 4; x++) BackgroundSections[x].Reload(ini, section);
+
+            IniGetColor(ini, section, "AltimeterVSpeed", () => _altimeterVSpeed, (c) => _altimeterVSpeed = c);
+            AltimeterHeight.Reload(ini, section);
+            SpeedIndicator.Reload(ini, section);
+
             _Terminal.CustomData = ini.ToString();
             ParsedIni = true;
         }
-        private Color GetColor(Color? valuesTextColor) {
+        public Color GetColor(Color? valuesTextColor) {
             if (valuesTextColor == null) return _Horizon.ForegroundColor;
             return valuesTextColor.Value;
         }
 
-        void IniGetColor(MyIni ini, string section, string name, Func<Color?> Set, Action<Color?> Get) {
+        public Color GetColor(Color? valuesTextColor, float opacity) {
+            if (valuesTextColor == null) return new Color(_Horizon.ForegroundColor, opacity);
+            return new Color(valuesTextColor.Value, opacity);
+        }
+
+        public void IniGetColor(MyIni ini, string section, string name, Func<Color?> Set, Action<Color?> Get) {
             MyIniValue iniValue;
             string strColor;
 
@@ -212,7 +234,7 @@ namespace CustomizableAH {
                     }
 
                     ini.SetComment(section, name, "");
-                    Get?.Invoke(new Color(r, g, b, 255));
+                    Get?.Invoke(new Color(r, g, b, a));
                 } else {
                     ini.SetComment(section, name, "Invalid format for color, (FG,BG)|(ALL)|(RGB,A)|(R,G,B)|(R,G,B,A)");
                     Get?.Invoke(_Horizon.ForegroundColor);
@@ -232,11 +254,54 @@ namespace CustomizableAH {
     }
 
     static class IniExtensions {
-        internal static void Lambda(this MyIni ini, string title, string name, Func<string> Set, Action<MyIniValue> Get) {
+        internal static void Lambda(this MyIni ini, string section, string name, Func<string> Set, Action<MyIniValue> Get) {
             MyIniValue iniValue;
-            if (!(iniValue = ini.Get(title, name)).IsEmpty) {
+            if (!(iniValue = ini.Get(section, name)).IsEmpty) {
                 Get?.Invoke(iniValue);
-            } else ini.Set(title, name, Set?.Invoke());
+            } else ini.Set(section, name, Set?.Invoke());
+        }
+    }
+
+    class HorizonBackground {
+        public AHConfig Cfg { get; }
+        public string Prefix { get; }
+
+        private Color? _color { get; set; } = null;
+
+        public Color Color => Cfg.GetColor(_color, Opacity);
+
+
+        public float Opacity { get; set; } = 0.5f;
+
+        public HorizonBackground(AHConfig cfg, string Prefix) {
+            Cfg = cfg;
+            this.Prefix = Prefix;
+        }
+
+        public void Reload(MyIni ini, string section) {
+            Cfg.IniGetColor(ini, section, Prefix+"Color", () => _color, (c) => _color = c);
+            ini.Lambda(section, Prefix + "Opacity", () => Opacity+"", (v) => Opacity = (float)v.ToDouble());
+        }
+    }
+
+    class TextAndBorderColor {
+        public AHConfig Cfg { get; }
+        public string Prefix { get; }
+
+        private Color? _textColor { get; set; } = null;
+        public Color TextColor => Cfg.GetColor(_textColor);
+
+        private Color? _borderColor { get; set; } = null;
+        public Color BorderColor => Cfg.GetColor(_borderColor);
+
+        public TextAndBorderColor(AHConfig cfg, string Prefix) {
+            Cfg = cfg;
+            this.Prefix = Prefix;
+        }
+
+        public void Reload(MyIni ini, string section) {
+            Cfg.IniGetColor(ini, section, Prefix + "Text", () => _textColor, (c) => _textColor = c);
+            Cfg.IniGetColor(ini, section, Prefix + "Border", () => _borderColor, (c) => _borderColor = c);
         }
     }
 

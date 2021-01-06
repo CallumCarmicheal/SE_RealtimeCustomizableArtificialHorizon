@@ -87,19 +87,17 @@ namespace CustomizableAH {
         public override List<MySprite> RunSpecial() {
             // Slow down updates if nothing changed (so display properly refreshes with accurate info on stop)
             if (m_lastBlockMatrix == m_block.WorldMatrix) {
-                if (m_updateRateDivisor != 30)
-                    m_updateRateDivisor = 30;   // 1 FPS
+                m_updateRateDivisor = 30; // 1 FPS           |   if (m_updateRateDivisor != 30)
             } else {
-                if (m_updateRateDivisor != 1)
-                    m_updateRateDivisor = 1;    // Back to 30 FPS
+                m_updateRateDivisor = 1;  // Back to 30 FPS  |  if (m_updateRateDivisor != 1)
             }
 
             return base.RunSpecial();
         }
 
         public override void Draw(MySpriteDrawFrame frame) {
-            // Dont render if no physics or only render every 100 ticks.
-            if (m_grid?.Physics == null && colors.PauseOnNoPhysics) {
+            // Don't render if no physics or only render every 100 ticks.
+            if (m_grid?.Physics == null) {
                 m_tickCounter++;
 
                 // Wrap around tick counter to 10000's
@@ -121,14 +119,21 @@ namespace CustomizableAH {
 
             configurationSettings(frame);
 
-            float interference;
-            var gravity = MyAPIGateway.Physics.CalculateNaturalGravityAt(m_ownerTransform.Translation, out interference);
+            float naturalGravityInterference;
+            var gravity = MyAPIGateway.Physics.CalculateNaturalGravityAt(m_ownerTransform.Translation, out naturalGravityInterference);
             if (gravity.LengthSquared() >= PLANET_GRAVITY_THRESHOLD_SQ)
                 DrawPlanetDisplay(frame, gravity, m_ownerTransform);
             else
                 DrawSpaceDisplay(frame, m_ownerTransform);
 
             m_tickCounter++;
+
+            // Apply rotation
+            var frameCollection = frame.ToCollection();
+            foreach (var f in frameCollection.Sprites)
+            {
+                
+            }
 
             // Wrap around tick counter to 10000's
             if (m_tickCounter > 10000) m_tickCounter -= 10000;
@@ -156,8 +161,6 @@ namespace CustomizableAH {
                 DrawTextBox(frame, textBoxSize, textPosition, colors.TextColor,
                     colors.ErrorBorder, Color.Transparent, m_fontScale, errorText);
             }
-
-           
         }
 
         #region Planet Display
@@ -211,23 +214,27 @@ namespace CustomizableAH {
             drawPosGround.Rotate(rollAngle);
 
             var bgSprite = new MySprite(SpriteType.TEXTURE, MyTextSurfaceHelper.DEFAULT_BG_TEXTURE, m_halfSize + drawPosGround + screenForward2D, size,
-                new Color(colors.GridBackground, colors.GridBackgroundOpacity),
+                colors.BackgroundSections[0].Color,
                 rotation: (float)rollAngle);
             frame.Add(bgSprite);
 
             bgSprite.Position = m_halfSize - drawPosGround + screenForward2D;
+            bgSprite.Color = colors.BackgroundSections[1].Color;
             frame.Add(bgSprite);
 
             drawPosGround = new Vector2(0, m_screenDiag * 1.5f);
             drawPosGround.Rotate(rollAngle);
             bgSprite.Position = m_halfSize + drawPosGround + screenForward2D;
+            bgSprite.Color = colors.BackgroundSections[2].Color;
             frame.Add(bgSprite);
 
+            bgSprite.Color = colors.BackgroundSections[3].Color;
             bgSprite.Position = m_halfSize - drawPosGround + screenForward2D;
             frame.Add(bgSprite);
 
             var horizonLine = new MySprite(SpriteType.TEXTURE, MyTextSurfaceHelper.BLANK_TEXTURE, m_halfSize + screenForward2D, new Vector2(m_screenDiag, 3f * m_maxScale),
                 colors.HorizonLine, rotation: (float)rollAngle);
+
             frame.Add(horizonLine);
         }
 
@@ -308,18 +315,19 @@ namespace CustomizableAH {
             var radarAltDrawPos = m_halfSize + new Vector2(115, 80) * m_maxScale;
 
             AddTextBox(frame, radarAltDrawPos + textBoxSize * 0.5f, textBoxSize, radarAltString, m_fontId, m_fontScale,
-                colors.TextColor, colors.TextColor, "AH_TextBox", m_textOffsetInsideBox.X);
+                colors.AltimeterHeight.BorderColor, colors.AltimeterHeight.TextColor, "AH_TextBox", m_textOffsetInsideBox.X);
 
             if (radarAltitude < RADAR_ALTITUDE_THRESHOLD) {
-                var radarSprite = MySprite.CreateText("R", m_fontId, colors.TextColor, m_fontScale, TextAlignment.LEFT);
+                var radarSprite = MySprite.CreateText("R", m_fontId, colors.AltimeterHeight.TextColor, m_fontScale, TextAlignment.LEFT);
                 var pos = radarAltDrawPos + textBoxSize * 0.5f;
                 radarSprite.Position = pos + new Vector2(textBoxSize.X, -textBoxSize.Y) * 0.5f + m_textOffsetInsideBox;
                 frame.Add(radarSprite);
             }
 
+            // Speed
             var diffPerSec = (seaLevelAltitude - m_lastSeaLevelAlt) * 30;
             AddTextBox(frame, radarAltDrawPos + new Vector2(textBoxSize.X * 0.5f, -textBoxSize.Y * 0.5f), textBoxSize, ((int)diffPerSec).ToString(), 
-                m_fontId, m_fontScale, colors.TextColor, colors.TextColor, textOffset: m_textOffsetInsideBox.X);
+                m_fontId, m_fontScale, colors.AltimeterVSpeed, colors.AltimeterVSpeed, textOffset: m_textOffsetInsideBox.X);
 
             return seaLevelAltitude;
         }
@@ -345,7 +353,7 @@ namespace CustomizableAH {
                 var projectionVel = Vector3D.Reject(velocity, worldTrans.Forward);
                 projectionVel = Vector3D.TransformNormal(projectionVel, MatrixD.Invert(worldTrans));
                 var projectionVel2D = new Vector2((float)projectionVel.X, -(float)projectionVel.Y) * HUD_SCALING * m_maxScale;
-                if (vSq < 9)
+                if (vSq < colors.VelocityResetAmount)
                     projectionVel2D = new Vector2(0, 0);
 
                 var projectionVelDraw = new MySprite(SpriteType.TEXTURE, "AH_VelocityVector", m_halfSize + projectionVel2D, new Vector2(50, 50) * m_maxScale,
@@ -429,7 +437,7 @@ namespace CustomizableAH {
         private MySpriteDrawFrame DrawSpeedIndicator(MySpriteDrawFrame frame, Vector2 drawPos, Vector2 textBoxSize, Vector3 velocity) {
             var velLen = (int)velocity.Length();
             AddTextBox(frame, drawPos + textBoxSize * 0.5f, textBoxSize, velLen.ToString(), m_fontId, m_fontScale,
-                m_foregroundColor, m_foregroundColor, "AH_TextBox", m_textOffsetInsideBox.X);
+                colors.SpeedIndicator.BorderColor, colors.SpeedIndicator.TextColor, "AH_TextBox", m_textOffsetInsideBox.X);
 
             return frame;
         }
