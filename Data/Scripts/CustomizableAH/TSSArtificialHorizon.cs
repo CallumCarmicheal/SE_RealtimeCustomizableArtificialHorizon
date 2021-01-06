@@ -104,9 +104,8 @@ namespace CustomizableAH {
                 // Wrap around tick counter to 10000's
                 if (m_tickCounter > 10000) m_tickCounter -= 10000;
 
-                // Update config every 100 ticks
-                if (m_tickCounter % 100 == 0)
-                    m_colors.ReloadValues();
+                // Update config every 60 ticks
+                m_colors.ReloadValues();
            
                 return;
             }

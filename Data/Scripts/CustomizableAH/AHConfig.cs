@@ -178,26 +178,26 @@ namespace CustomizableAH {
                 } 
                 
                 else if (strColor.StartsWith("#")) {
-                    strColor = strColor.TrimStart('#').Trim();
+                    string txtColor = strColor.TrimStart('#').Trim();
 
                     try {
                         Color col; // from System.Drawing or System.Windows.Media
                         if (strColor.Length == 6)
                             col = new Color(255, // hardcoded opaque
-                                int.Parse(strColor.Substring(0, 2), NumberStyles.HexNumber),
-                                int.Parse(strColor.Substring(2, 2), NumberStyles.HexNumber),
-                                int.Parse(strColor.Substring(4, 2), NumberStyles.HexNumber));
+                                int.Parse(txtColor.Substring(0, 2), NumberStyles.HexNumber),
+                                int.Parse(txtColor.Substring(2, 2), NumberStyles.HexNumber),
+                                int.Parse(txtColor.Substring(4, 2), NumberStyles.HexNumber));
                         else // assuming length of 8
                             col = new Color(
-                                int.Parse(strColor.Substring(0, 2), NumberStyles.HexNumber),
-                                int.Parse(strColor.Substring(2, 2), NumberStyles.HexNumber),
-                                int.Parse(strColor.Substring(4, 2), NumberStyles.HexNumber),
-                                int.Parse(strColor.Substring(6, 2), NumberStyles.HexNumber));
+                                int.Parse(txtColor.Substring(0, 2), NumberStyles.HexNumber),
+                                int.Parse(txtColor.Substring(2, 2), NumberStyles.HexNumber),
+                                int.Parse(txtColor.Substring(4, 2), NumberStyles.HexNumber),
+                                int.Parse(txtColor.Substring(6, 2), NumberStyles.HexNumber));
 
                         ini.SetComment(section, name, "");
                         Get?.Invoke(col);
                     } catch (Exception ex) {
-                        ini.SetComment(section, name, "Failed to parse HEX COLOR: " + ex.Message);
+                        ini.SetComment(section, name, "Failed to parse HEX COLOR: " + $"'{txtColor}' - " + ex.Message);
                         Get?.Invoke(_Horizon.ForegroundColor);
                     }
                 }
@@ -210,7 +210,7 @@ namespace CustomizableAH {
                         Get?.Invoke(new Color(value, value, value, 255));
                     }
                     else {
-                        ini.SetComment(section, name, "Failed to parse as single integer");
+                        ini.SetComment(section, name, "Failed to parse as single integer: " + strColor);
                     }
                 }
 
@@ -220,12 +220,12 @@ namespace CustomizableAH {
                     int rgb = 0, a = 0;
 
                     bool tryRgb = int.TryParse(unpack[0], out rgb);
-                    bool tryA   = int.TryParse(unpack[1], out rgb);
+                    bool tryA   = int.TryParse(unpack[1], out a);
 
                     if (!tryRgb || !tryA) {
                         var error = "Error: " + strColor;
-                        if (!tryRgb) error += ", RGB not valid int";
-                        if (!tryA)   error += ", Alpha not valid int";
+                        if (!tryRgb) error += $", RGB '{unpack[0]}' not valid int";
+                        if (!tryA)   error += $", Alpha '{unpack[1]}' not valid int";
                         ini.SetComment(section, name, error);
 
                         Get?.Invoke(_Horizon.ForegroundColor);
@@ -247,9 +247,9 @@ namespace CustomizableAH {
 
                     if (!tryR || !tryG || !tryB) {
                         var error = "Error: " + strColor;
-                        if (!tryR) error += ", Red not valid int";
-                        if (!tryG) error += ", Green not valid int";
-                        if (!tryB) error += ", Blue not valid int";
+                        if (!tryR) error += $", Red '{unpack[0]}' not valid int";
+                        if (!tryG) error += $", Green '{unpack[1]}' not valid int";
+                        if (!tryB) error += $", Blue '{unpack[2]}' not valid int";
                         ini.SetComment(section, name, error);
 
                         Get?.Invoke(_Horizon.ForegroundColor);
@@ -272,10 +272,10 @@ namespace CustomizableAH {
 
                     if (!tryR || !tryG || !tryB || !tryA) {
                         var error = "Error: " + strColor;
-                        if (!tryR) error += ", Red not valid int";
-                        if (!tryG) error += ", Green not valid int";
-                        if (!tryB) error += ", Blue not valid int";
-                        if (!tryA) error += ", Alpha not valid int";
+                        if (!tryR) error += $", Red '{unpack[0]}' not valid int";
+                        if (!tryG) error += $", Green '{unpack[1]}' not valid int";
+                        if (!tryB) error += $", Blue '{unpack[2]}' not valid int";
+                        if (!tryA) error += $", Alpha '{unpack[3]}' not valid int";
                         ini.SetComment(section, name, error);
 
                         Get?.Invoke(_Horizon.ForegroundColor);
@@ -285,7 +285,7 @@ namespace CustomizableAH {
                     ini.SetComment(section, name, "");
                     Get?.Invoke(new Color(r, g, b, a));
                 } else {
-                    ini.SetComment(section, name, "Invalid format for color, (FG,BG)|(ALL)|(RGB,A)|(R,G,B)|(R,G,B,A)");
+                    ini.SetComment(section, name, "Invalid format for color, (FG,BG)|#RRGGBB|#RRGGBBAA|(ALL)|(RGB,A)|(R,G,B)|(R,G,B,A)");
                     Get?.Invoke(_Horizon.ForegroundColor);
                 }
             } else {
