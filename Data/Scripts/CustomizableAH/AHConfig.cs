@@ -57,7 +57,7 @@ namespace CustomizableAH {
 
         // ==========================
 
-        public float RotationAmount { get; set; } = 9;
+        public float RotationAmount { get; set; } = 0;
 
         public float VelocityResetAmount { get; set; } = 9;
 
@@ -104,6 +104,7 @@ namespace CustomizableAH {
             }
 
             ini.Lambda(section, "VelocityResetAmount", () => VelocityResetAmount + "", (v) => VelocityResetAmount = (float) v.ToDouble());
+            ini.Lambda(section, "RotationAmount", () => RotationAmount + "", (v) => RotationAmount = (float) v.ToDouble());
 
             IniGetColor(ini, section, "TextColor", () => _textColor, (c) => _textColor = c);
             IniGetColor(ini, section, "ErrorBorder", () => _errorBorder, (c) => _errorBorder = c);
