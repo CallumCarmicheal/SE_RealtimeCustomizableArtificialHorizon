@@ -63,7 +63,7 @@ namespace CustomizableAH {
         public IMyTerminalBlock _Terminal { get; }
         public Vector2 _Size { get; }
 
-        public bool   ParsedIni = false;
+        public bool ParsedIni = false;
 
         public AHConfig(TSSArtificialHorizon horizon, IMyTextSurface surface, IMyCubeBlock block, Vector2 size) {
             _Horizon = horizon;
@@ -95,7 +95,7 @@ namespace CustomizableAH {
                 return;
             }
 
-            ini.Lambda(section, "VelocityResetAmount", () => VelocityResetAmount + "", (v) => VelocityResetAmount = (float) v.ToDouble());
+            ini.Lambda(section, "VelocityResetAmount", () => VelocityResetAmount + "", (v) => VelocityResetAmount = (float)v.ToDouble());
 
             IniGetColor(ini, section, "TextColor", () => _textColor, (c) => _textColor = c);
             IniGetColor(ini, section, "TextColor", () => _textColor, (c) => _textColor = c);
@@ -129,7 +129,7 @@ namespace CustomizableAH {
 
         public T ParseEnum<T>(string text, T @default) where T : struct {
             T enumValue;
-            if (Enum.TryParse(text, out enumValue)) 
+            if (Enum.TryParse(text, out enumValue))
                 return enumValue;
             return @default;
         }
@@ -141,14 +141,13 @@ namespace CustomizableAH {
                 if (Enum.TryParse(iniValue.ToString(), out enumValue)) {
                     ini.SetComment(section, name, "");
                     Get?.Invoke(enumValue);
-                }
-                else {
+                } else {
                     var values = string.Join(", ", Enum.GetValues(typeof(T)));
                     ini.SetComment(section, name, "Failed to parse enum, Available values: " + values);
                     Get?.Invoke(@default);
                 }
             } else {
-                var value= Set?.Invoke();
+                var value = Set?.Invoke();
 
                 ini.Set(section, name, value != null ? value.ToString() : @default.ToString());
                 ini.SetComment(section, name, "");
@@ -164,7 +163,7 @@ namespace CustomizableAH {
                 string[] unpack = null;
 
                 int commaCount = strColor.Count(f => (f == ','));
-                
+
                 if (strColor == "FG" || strColor == "BG") {
                     switch (strColor) {
                     case "BG":
@@ -175,9 +174,7 @@ namespace CustomizableAH {
                         break;
                     }
                     ini.SetComment(section, name, "");
-                } 
-                
-                else if (strColor.StartsWith("#")) {
+                } else if (strColor.StartsWith("#")) {
                     string txtColor = strColor.TrimStart('#').Trim();
 
                     try {
@@ -208,8 +205,7 @@ namespace CustomizableAH {
                     if (int.TryParse(strColor, out value)) {
                         ini.SetComment(section, name, "");
                         Get?.Invoke(new Color(value, value, value, 255));
-                    }
-                    else {
+                    } else {
                         ini.SetComment(section, name, "Failed to parse as single integer: " + strColor);
                     }
                 }
@@ -220,12 +216,12 @@ namespace CustomizableAH {
                     int rgb = 0, a = 0;
 
                     bool tryRgb = int.TryParse(unpack[0], out rgb);
-                    bool tryA   = int.TryParse(unpack[1], out a);
+                    bool tryA = int.TryParse(unpack[1], out a);
 
                     if (!tryRgb || !tryA) {
                         var error = "Error: " + strColor;
                         if (!tryRgb) error += $", RGB '{unpack[0]}' not valid int";
-                        if (!tryA)   error += $", Alpha '{unpack[1]}' not valid int";
+                        if (!tryA) error += $", Alpha '{unpack[1]}' not valid int";
                         ini.SetComment(section, name, error);
 
                         Get?.Invoke(_Horizon.ForegroundColor);
@@ -239,7 +235,7 @@ namespace CustomizableAH {
                 else if (commaCount == 2) {
                     unpack = strColor.Unformat("{0},{1},{2}");
 
-                    int r = 0, g = 0, b = 0, a = 255;
+                    int r = 0, g = 0, b = 0;
 
                     bool tryR = int.TryParse(unpack[0], out r);
                     bool tryG = int.TryParse(unpack[1], out g);
@@ -291,10 +287,10 @@ namespace CustomizableAH {
             } else {
                 var color = Set?.Invoke();
 
-                if (color != null) 
-                     ini.Set(section, name, color.Value.A != 255 
-                         ? $"{color.Value.R},{color.Value.G},{color.Value.B},{color.Value.A}"
-                         : $"{color.Value.R},{color.Value.G},{color.Value.B}");
+                if (color != null)
+                    ini.Set(section, name, color.Value.A != 255
+                        ? $"{color.Value.R},{color.Value.G},{color.Value.B},{color.Value.A}"
+                        : $"{color.Value.R},{color.Value.G},{color.Value.B}");
                 else ini.Set(section, name, "FG");
                 ini.SetComment(section, name, "");
             }
@@ -328,8 +324,8 @@ namespace CustomizableAH {
         }
 
         public void Reload(MyIni ini, string section) {
-            Cfg.IniGetColor(ini, section, Prefix+"Color", () => _color, (c) => _color = c);
-            ini.Lambda(section, Prefix + "Opacity", () => Opacity+"", (v) => Opacity = (float)v.ToDouble());
+            Cfg.IniGetColor(ini, section, Prefix + "Color", () => _color, (c) => _color = c);
+            ini.Lambda(section, Prefix + "Opacity", () => Opacity + "", (v) => Opacity = (float)v.ToDouble());
         }
     }
 

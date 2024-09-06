@@ -433,7 +433,7 @@ namespace CustomizableAH {
             }
 
            
-            protected MySpriteDrawFrame AddTextBox( MySpriteDrawFrame frame, Vector2 position, Vector2 size, string text, string font,
+            protected new MySpriteDrawFrame AddTextBox( MySpriteDrawFrame frame, Vector2 position, Vector2 size, string text, string font,
                     float scale, Color bgColor, Color textColor, string bgSprite = null, float textOffset = 0.0f) {
 
                 Vector2 position1 = position + new Vector2(size.X * 0.5f, 0.0f);
@@ -452,7 +452,7 @@ namespace CustomizableAH {
                 return frame;
             }
 
-            protected MySpriteDrawFrame AddProgressBar( MySpriteDrawFrame frame, Vector2 position, Vector2 size, float ratio,
+            protected new MySpriteDrawFrame AddProgressBar( MySpriteDrawFrame frame, Vector2 position, Vector2 size, float ratio,
                     Color barBgColor, Color barFgColor, string barBgSprite = null, string barFgSprite = null) {
                 MySprite mySprite = new MySprite(data: (barBgSprite ?? "SquareSimple"), color: new Color?(barBgColor));
                 mySprite.Alignment = TextAlignment.LEFT;
